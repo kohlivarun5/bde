@@ -1,0 +1,7 @@
+sudo bash
+export ARCHFLAGS='-arch i386 -arch x86_64'
+
+python waf configure  --build-type=debug --out=build/Debug --abi-bits=64
+python waf build -j 2
+
+g++ bsl-vector-sample.m.cpp -I../groups/bsl/bsl+bslhdrs/ -I../groups/bsl/bsl+stdhdrs/ -I../groups/bsl/bslalg/ -I../groups/bsl/bsldoc/ -I../groups/bsl/bslim/ -I../groups/bsl/bslma/ -I../groups/bsl/bslmf/ -I../groups/bsl/bsls/ -I../groups/bsl/bslscm/ -I../groups/bsl/bslstl/ -I../groups/bsl/bsltf/ -I../groups/bsl/doc/ -I../groups/bsl/group/ -lbsl -L../build/Debug/groups/bsl/
