@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+extern "C" {
+
 CAMLprim value
 bdldt_date_make( value ml_year, value ml_month, value ml_day)
 {
@@ -13,7 +15,9 @@ bdldt_date_make( value ml_year, value ml_month, value ml_day)
 
     const int date_int = year + month + day;
 
-    printf("Date is :{%d}  <<---->> %d:%s\n",date_int,__LINE__,__FILE__);
+    printf("Date is :{%d}   <<----->> %d:%s\n",date_int,__LINE__,__FILE__);
 
     return Val_int(date_int);
+}
+
 }

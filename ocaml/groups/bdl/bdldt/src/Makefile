@@ -13,17 +13,17 @@ OCAMLOPT_CMD = ocamlopt $(WARN_ERROR_FLAGS) -c
 all: stubs libs top docs
 
 stubs:
-	$(OCAMLC_CMD) $(SOURCES_STUBS)
-	ocamlmklib -o $(LIB_NAME)_stubs $(SOURCES_STUBS:.c=.o)
+	$(OCAMLC_CMD) -ccopt -xc++ $(SOURCES_STUBS)
+	ocamlmklib -o $(LIB_NAME)_stubs $(SOURCES_STUBS:.c=.o) -cclib -lc++
 
 libs:
 	$(OCAMLC_CMD) $(SOURCES_MLI) $(SOURCES_ML)
 	$(OCAMLOPT_CMD) $(SOURCES_ML)
-	ocamlmklib -verbose -custom -o $(LIB_NAME) $(SOURCES_ML:.ml=.cmo) $(SOURCES_ML:.ml=.cmx) -cclib -L`pwd`/ 
-	ln -s $(LIB_NAME).a lib$(LIB_NAME).a
+	ocamlmklib -verbose -custom -o $(LIB_NAME) $(SOURCES_ML:.ml=.cmo) $(SOURCES_ML:.ml=.cmx) -cclib -L`pwd`/ -cclib -lc++
+	ln -s -f $(LIB_NAME).a lib$(LIB_NAME).a
 
 top:
-	ocamlmktop -custom  -o $(LIB_NAME).top $(LIB_NAME).cma ./lib$(LIB_NAME)_stubs.a
+	ocamlmktop -custom  -o $(LIB_NAME).top $(LIB_NAME).cma ./lib$(LIB_NAME)_stubs.a -cclib -lc++ 
 
 docs:
 	rm -rf ../docs
