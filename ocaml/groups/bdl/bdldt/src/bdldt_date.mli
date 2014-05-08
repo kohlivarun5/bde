@@ -1,2 +1,3 @@
 type t
-val of_string : int
+
+val make : year:int -> month:int -> day:int -> int

@@ -1,4 +1,4 @@
 
 type t = int
 
-let of_string = 100
+let make ~year ~month ~day = year + month + day

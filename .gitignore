@@ -15,3 +15,7 @@ coverage/
 *.annot
 *.cm*
 *.a
+*.out
+*.o
+*.top
+*docs*
