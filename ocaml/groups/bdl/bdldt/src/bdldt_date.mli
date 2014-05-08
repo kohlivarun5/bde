@@ -1,3 +1,3 @@
 type t
 
-val make : year:int -> month:int -> day:int -> int
+val make : year:int -> month:int -> day:int -> t

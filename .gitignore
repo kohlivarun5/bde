@@ -16,6 +16,8 @@ coverage/
 *.cm*
 *.a
 *.out
+*.so
+*.tsk
 *.o
 *.top
 *docs*
