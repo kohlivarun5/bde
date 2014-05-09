@@ -1,7 +1,7 @@
 LIB_NAME	= bdldt
 
 SOURCES_MLI	= bdldt_date.mli
-SOURCES_ML 	= bdldt_date.ml
+SOURCES_ML 	= bdldt_date.ml bdldt.ml
 SOURCES_STUBS	= bdldt_date.c
 
 
