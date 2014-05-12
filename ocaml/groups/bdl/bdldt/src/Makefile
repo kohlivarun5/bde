@@ -14,16 +14,16 @@ all: stubs libs top docs
 
 stubs:
 	$(OCAMLC_CMD) -ccopt -xc++ $(SOURCES_STUBS)
-	ocamlmklib -o $(LIB_NAME)_stubs $(SOURCES_STUBS:.c=.o) -cclib -lc++
+	ocamlmklib -o $(LIB_NAME)_stubs $(SOURCES_STUBS:.c=.o) -cclib -lstdc++
 
 libs:
 	$(OCAMLC_CMD) $(SOURCES_MLI) $(SOURCES_ML)
 	$(OCAMLOPT_CMD) $(SOURCES_ML)
-	ocamlmklib -verbose -custom -o $(LIB_NAME) $(SOURCES_ML:.ml=.cmo) $(SOURCES_ML:.ml=.cmx) -cclib -L`pwd`/ -cclib -lc++
+	ocamlmklib -verbose -custom -o $(LIB_NAME) $(SOURCES_ML:.ml=.cmo) $(SOURCES_ML:.ml=.cmx) -cclib -L`pwd`/ -cclib -lstdc++
 	ln -s -f $(LIB_NAME).a lib$(LIB_NAME).a
 
 top:
-	ocamlmktop -custom  -o $(LIB_NAME).top $(LIB_NAME).cma ./lib$(LIB_NAME)_stubs.a -cclib -lc++ 
+	ocamlmktop -custom  -o $(LIB_NAME).top $(LIB_NAME).cma ./lib$(LIB_NAME)_stubs.a -cclib -lstdc++ 
 
 docs:
 	rm -rf ../docs
