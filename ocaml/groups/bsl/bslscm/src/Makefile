@@ -13,7 +13,13 @@ OCAMLLIB=`ocamlc -where`
 
 OCAML_INCLUDE=$(OCAMLLIB)
 
-CPP_INC_FLAGS= -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsl+bslhdrs/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsl+stdhdrs/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslalg/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsldoc/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslim/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslma/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslmf/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsls/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslscm/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslstl/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsltf/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/doc/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/group/
+
+CPP_INC_FLAGS=$(BSL_HEADERS_WITH_I)
+
+#The following is hard coded because BSL_HEADERS_WITH_I is not getting picked from environment for some reason.
+
+# CPP_INC_FLAGS= -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsl+bslhdrs/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsl+stdhdrs/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslalg/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsldoc/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslim/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslma/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslmf/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsls/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslscm/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bslstl/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/bsltf/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/doc/ -I/Users/varunkohli/SkyDrive/GitHub/bde/ocaml/..//groups/bsl/group/
+
 CPP_LIB_FLAGS= -cclib -L`pwd`/ -cclib -lstdc++ -cclib $(BSL_LIB)
 
 all: stubs libs top docs
@@ -40,4 +46,4 @@ clean:
 	rm -rf ../docs
 
 .cpp.o:
-	gcc -v -g -Wall -c -fPIC -o $*.o $*.cpp -I$(OCAML_INCLUDE) $(CPP_INC_FLAGS)
+	gcc -v -g -Wall -c -fPIC -o $*.o $*.cpp $(CPP_INC_FLAGS) -I$(OCAML_INCLUDE) $(CPP_INC_FLAGS)
