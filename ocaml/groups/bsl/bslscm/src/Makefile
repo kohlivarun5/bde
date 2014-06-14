@@ -2,7 +2,7 @@ LIB_NAME	= bslscm
 
 SOURCES_MLI	= bslscm_version.mli
 SOURCES_ML 	= bslscm_version.ml bslscm.ml
-SOURCES_STUBS	= bslscm_version.cpp
+SOURCES_STUBS	= bslscm_version_stubs.cpp
 SOURCES_STUBS_O=$(SOURCES_STUBS:.cpp=.o)
 
 WARN_ERROR_FLAGS = -warn-error -w -verbose
