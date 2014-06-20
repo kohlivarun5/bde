@@ -6,7 +6,6 @@ SOURCES_ML 	= test_bslscm_version.ml
 INCLUDE_PATH	= ../src/ 
 
 WARN_ERROR_FLAGS = -warn-error -w -verbose
-OCAMLC_CMD = ocamlc $(WARN_ERROR_FLAGS) -I $(INCLUDE_PATH)
 OCAMLOPT_CMD = ocamlopt $(WARN_ERROR_FLAGS) -I $(INCLUDE_PATH)
 
 LIBS = ../src/$(LIB_NAME).cma -cclib ../src/lib$(LIB_NAME)_stubs.a

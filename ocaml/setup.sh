@@ -1,7 +1,7 @@
 #!/bin/bash 
 
 BDE_SOURCE_ROOT=$PWD/../
-BDE_BUILD_DIR=$PWD/../build/Debug/
+BDE_BUILD_DIR=$PWD/../build/
 
 BSL_HEADERS=`\ls -d1 $BDE_SOURCE_ROOT/groups/bsl/*/`
 #echo $BSL_HEADERS 
