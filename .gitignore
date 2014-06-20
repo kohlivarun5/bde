@@ -12,3 +12,12 @@ coverage/
 *.pyc
 .lock-waf*
 .waf-*
+*.annot
+*.cm*
+*.a
+*.out
+*.so
+*.tsk
+*.o
+*.top
+*docs*
