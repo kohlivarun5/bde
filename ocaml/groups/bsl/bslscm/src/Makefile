@@ -15,7 +15,7 @@ OCAML_INCLUDE=$(OCAMLLIB)
 
 CPP_INC_FLAGS=$(BSL_HEADERS_WITH_I)
 
-CPP_LIB_FLAGS= -cclib -L$(PWD)/ -cclib -lstdc++ -cclib $(BSL_LIB)
+CPP_LIB_FLAGS= -cclib -L$(PWD)/ -cclib $(BSL_LIB) -cclib -lstdc++ 
 
 all: stubs libs top docs
 
