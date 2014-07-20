@@ -7,12 +7,12 @@
 #endif
 BSLS_IDENT("$Id: $")
 
-//@PURPOSE: Provide a primitive trait for types that use 'bslma' allocators.
+//@PURPOSE: Provide a trait to mark types that use 'bslma' allocators.
 //
 //@CLASSES:
 //  bslalg::TypeTraitUsesBslmaAllocator: uses 'bslma' allocators
 //
-//@SEE_ALSO: bslmf_typetraits, bslalg_constructorproxy
+//@SEE_ALSO: bslalg_constructorproxy
 //
 //@DESCRIPTION: This component provides a single traits class,
 // 'bslalg::TypeTraitUsesBslmaAllocator'.  A type 'T' with this trait uses an

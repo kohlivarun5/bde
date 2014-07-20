@@ -5,7 +5,7 @@
 #ifndef INCLUDED_BSLS_IDENT
 #include <bsls_ident.h>
 #endif
-BSLS_IDENT("$Id: $");
+BSLS_IDENT("$Id: $")
 
 //@PURPOSE: Provide a representation of a 128-bit 'int' for bitwise operations.
 //
@@ -254,9 +254,6 @@ Uint128 operator>>(Uint128 lhs, int rhs);
     // Return an 'Uint128' value equal to the value of a bitwise right shift of
     // the specified 'lhs' 128-bit integer shifted by the specified 'rhs'
     // value.  The behavior is undefined unless '0 <= rhs < 128'.
-
-
-
 
 // ============================================================================
 //                      INLINE FUNCTION DEFINITIONS

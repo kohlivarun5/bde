@@ -1,7 +1,11 @@
 // bdldfp_decimalutil.t.cpp                                           -*-C++-*-
 #include <bdldfp_decimalutil.h>
 
+#include <bdldfp_decimal.h>
 #include <bdldfp_decimalconvertutil.h>
+#include <bdldfp_uint128.h>
+
+#include <bdls_testutil.h>
 
 #include <bslma_testallocator.h>
 #include <bslma_defaultallocatorguard.h>
@@ -10,16 +14,17 @@
 #include <bsls_asserttest.h>
 #include <bsls_stopwatch.h>
 
+#include <bsl_algorithm.h>
+#include <bsl_climits.h>
+#include <bsl_cmath.h>
+#include <bsl_cstdlib.h>
+#include <bsl_fstream.h>
+#include <bsl_limits.h>
 #include <bsl_iostream.h>
 #include <bsl_sstream.h>
-#include <bsl_cstdlib.h>
-#include <bsl_climits.h>
-#include <bsl_limits.h>
-#include <bsl_cmath.h>
-#include <bsl_vector.h>
 #include <bsl_string.h>
 #include <bsl_unordered_map.h>
-#include <bsl_fstream.h>
+#include <bsl_vector.h>
 
 #include <typeinfo>
 
@@ -30,13 +35,13 @@ using bsl::flush;
 using bsl::endl;
 using bsl::atoi;
 
-//=============================================================================
+// ============================================================================
 //                                 TEST PLAN
-//-----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 //                                  Overview
 //                                  --------
 // TBD:
-//-----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // CREATORS
 //
 // MANIPULATORS
@@ -46,15 +51,16 @@ using bsl::atoi;
 // FREE OPERATORS
 //
 // TRAITS
-//-----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // [ 1] BREATHING TEST
 // [  ] USAGE EXAMPLE
 // ----------------------------------------------------------------------------
 
 
-//=============================================================================
-//                      STANDARD BDE ASSERT TEST MACRO
-//-----------------------------------------------------------------------------
+// ============================================================================
+//                      STANDARD BDE ASSERT TEST MACROS
+// ----------------------------------------------------------------------------
+
 static int testStatus = 0;
 
 static void aSsErT(int c, const char *s, int i)
@@ -62,15 +68,15 @@ static void aSsErT(int c, const char *s, int i)
     if (c) {
         cout << "Error " << __FILE__ << "(" << i << "): " << s
              << "    (failed)" << endl;
-        if (0 <= testStatus && testStatus <= 100) ++testStatus;
+        if (testStatus >= 0 && testStatus <= 100) ++testStatus;
     }
 }
-
 #define ASSERT(X) { aSsErT(!(X), #X, __LINE__); }
 
-//=============================================================================
+// ============================================================================
 //                  STANDARD BDE LOOP-ASSERT TEST MACROS
-//-----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
 #define LOOP_ASSERT(I,X) { \
    if (!(X)) { cout << #I << ": " << I << "\n"; aSsErT(1, #X, __LINE__); }}
 
@@ -99,18 +105,19 @@ static void aSsErT(int c, const char *s, int i)
        #M << ": " << M << "\t" << #N << ": " << N << "\n"; \
        aSsErT(1, #X, __LINE__); } }
 
-//=============================================================================
+// ============================================================================
 //                  SEMI-STANDARD TEST OUTPUT MACROS
-//-----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
 #define P(X) cout << #X " = " << (X) << endl; // Print identifier and value.
 #define Q(X) cout << "<| " #X " |>" << endl;  // Quote identifier literally.
-#define P_(X) cout << #X " = " << (X) << ", "<< flush; // P(X) without '\n'
+#define P_(X) cout << #X " = " << (X) << ", "<< flush; // 'P(X)' without '\n'
+#define T_ cout << "\t" << flush;             // Print tab w/o newline.
 #define L_ __LINE__                           // current Line number
-#define T_ cout << "\t" << flush;             // Print tab w/o newline
 
-//=============================================================================
+// ============================================================================
 //                  GLOBAL TYPEDEFS/CONSTANTS FOR TESTING
-//-----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 namespace BDEC = BloombergLP::bdldfp;
 
@@ -306,7 +313,58 @@ const int exps[] = {
                   129,
                   321,
 };
-const int numExps = sizeof(exps) / sizeof(*mantissas);
+const int numExps = sizeof(exps) / sizeof(*exps);
+namespace {
+
+// Testing apparatus
+
+BDEC::DecimalImplUtil::ValueType64 makeDecimalRaw64Zero(long long mantissa,
+                                                        int       exponent)
+    // Return a 64-bit decimal floating point value with the specified
+    // 'mantissa' and 'exponent', including for cases in which
+    // 'exponent == 0'.  The behavior is undefined unless
+    // 'abs(mantissa) <= 9,999,999,999,999,999' and '-398 <= exponent <= 369'.
+{
+#if defined(BDLDFP_DECIMALPLATFORM_C99_TR) && \
+    defined(BSLS_PLATFORM_CMP_IBM)         && \
+    defined(BDLDFP_DECIMALPLATFORM_HARDWARE)
+
+    if (mantissa) {
+        return BDEC::DecimalImplUtil::makeDecimalRaw64(mantissa, exponent);
+    }
+
+    return BDEC::DecimalImplUtil::makeDecimalRaw128(1, exponent) -
+           BDEC::DecimalImplUtil::makeDecimalRaw128(1, exponent);
+#else
+    return BDEC::DecimalImplUtil::makeDecimalRaw64(mantissa, exponent);
+#endif
+}
+
+
+BDEC::DecimalImplUtil::ValueType128 makeDecimalRaw128Zero(long long mantissa,
+                                                          int       exponent)
+    // Return a 128-bit decimal floating point value with the specified
+    // 'mantissa' and 'exponent', including for cases in which
+    // 'exponent == 0'.  The behavior is undefined unless
+    // '-6176 <= exponent <= 6111'.
+{
+#if defined(BDLDFP_DECIMALPLATFORM_C99_TR) && \
+    defined(BSLS_PLATFORM_CMP_IBM)         && \
+    defined(BDLDFP_DECIMALPLATFORM_HARDWARE)
+
+    if (mantissa) {
+        return BDEC::DecimalImplUtil::makeDecimalRaw128(mantissa, exponent);
+    }
+    return BDEC::DecimalImplUtil::makeDecimalRaw128(1, exponent) -
+           BDEC::DecimalImplUtil::makeDecimalRaw128(1, exponent);
+#else
+    return BDEC::DecimalImplUtil::makeDecimalRaw128(mantissa, exponent);
+#endif
+
+}
+
+
+}  // closing unnamed namespace.
 
 //=============================================================================
 //              GLOBAL HELPER FUNCTIONS AND CLASSES FOR TESTING
@@ -345,10 +403,10 @@ bsl::wstring& decLower(bsl::wstring& s)
 //-----------------------------------------------------------------------------
 
 
-template <class Expect, class Received>
-void checkType(const Received&)
+template <class EXPECT, class RECEIVED>
+void checkType(const RECEIVED&)
 {
-    ASSERT(typeid(Expect) == typeid(Received));
+    ASSERT(typeid(EXPECT) == typeid(RECEIVED));
 }
 
 template <class TYPE>
@@ -359,7 +417,7 @@ struct NumberMaker<BDEC::Decimal64>
 {
     BDEC::Decimal64 operator()(long long mantissa, int exponent) const
     {
-        return BDEC::DecimalImplUtil::makeDecimalRaw64(mantissa, exponent);
+        return makeDecimalRaw64Zero(mantissa, exponent);
     }
 };
 
@@ -368,7 +426,7 @@ struct NumberMaker<BDEC::Decimal128>
 {
     BDEC::Decimal128 operator()(long long mantissa, int exponent) const
     {
-        return BDEC::DecimalImplUtil::makeDecimalRaw128(mantissa, exponent);
+        return makeDecimalRaw128Zero(mantissa, exponent);
     }
 };
 
@@ -406,23 +464,23 @@ struct NulBuf : bsl::streambuf {
 
 int main(int argc, char* argv[])
 {
-    int               test = argc > 1 ? atoi(argv[1]) : 0;
-    int           verbose1 = argc > 2;
-    int           verbose2 = argc > 3;
-    int           verbose3 = argc > 4;
-    int allocatorVerbosity = argc > 5;  // always the last
+    int                test = argc > 1 ? atoi(argv[1]) : 0;
+    int             verbose = argc > 2;
+    int         veryVerbose = argc > 3;
+    int     veryVeryVerbose = argc > 4;
+    int veryVeryVeryVerbose = argc > 5;  // always the last
 
     using bsls::AssertFailureHandlerGuard;
 
-    bslma::TestAllocator defaultAllocator("default", allocatorVerbosity);
+    bslma::TestAllocator defaultAllocator("default", veryVeryVeryVerbose);
     bslma::Default::setDefaultAllocator(&defaultAllocator);
 
-    bslma::TestAllocator globalAllocator("global", allocatorVerbosity);
+    bslma::TestAllocator globalAllocator("global", veryVeryVeryVerbose);
     bslma::Default::setGlobalAllocator(&globalAllocator);
 
     cout << "TEST " << __FILE__ << " CASE " << test << endl;;
 
-    bslma::TestAllocator  ta(allocatorVerbosity);
+    bslma::TestAllocator  ta(veryVeryVeryVerbose);
     bslma::TestAllocator *pa = &ta;
 
     typedef BDEC::DecimalUtil Util;
@@ -431,7 +489,62 @@ int main(int argc, char* argv[])
 
 
     switch (test) { case 0:
-    case 9: {
+    case 11: {
+        // --------------------------------------------------------------------
+        // TESTING multiplyByPowerOf10
+        // Concerns: Forwarding to the right routines
+        // Plan: Try with several variations and combinations of
+        //       decimal floats (different mantissas and exponents, both
+        //       positive and negative.), and different powers of 10 to
+        //       multiply by (both positive and negative.)
+        // Testing: multiplyByPowerOf10
+        // --------------------------------------------------------------------
+        if (verbose) bsl::cout << "multiplyByPowerOf10 tests..." << bsl::endl;
+        {
+            for (int mi = 0; mi < numMantissas; ++mi) {
+                for (int ei = 0; ei < numExps; ++ei) {
+                    for (int ei2 = 0; ei2 < numExps; ++ei2) {
+
+                        const long long MANTISSA = mantissas[mi];
+                        const int EXP            = exps[ei];
+                        const int POW            = exps[ei2];
+
+                        if (veryVerbose) bsl::cout << "multiplyByPowerOf10 "
+                            "tests on 'int' powers..." << bsl::endl;
+                        {
+                            const BDEC::Decimal64 VALUE = Util::makeDecimal64(
+                                MANTISSA, EXP);
+                            const BDEC::Decimal64 ACTUAL_RESULT =
+                                Util::multiplyByPowerOf10(VALUE, POW);
+                            const BDEC::Decimal64 EXPECTED_RESULT =
+                                Util::makeDecimal64(MANTISSA, EXP + POW);
+
+                            LOOP5_ASSERT(MANTISSA, EXP, POW,
+                                         ACTUAL_RESULT, EXPECTED_RESULT,
+                                         ACTUAL_RESULT == EXPECTED_RESULT);
+                        }
+
+                        if (veryVerbose) bsl::cout << "multiplyByPowerOf10 "
+                            "tests on 'Decimal64' powers..." << bsl::endl;
+                        {
+                            const BDEC::Decimal64 VALUE = Util::makeDecimal64(
+                                MANTISSA, EXP);
+                            const BDEC::Decimal64 ACTUAL_RESULT =
+                                Util::multiplyByPowerOf10(VALUE,
+                                                         BDEC::Decimal64(POW));
+                            const BDEC::Decimal64 EXPECTED_RESULT =
+                                Util::makeDecimal64(MANTISSA, EXP + POW);
+
+                            LOOP5_ASSERT(MANTISSA, EXP, POW,
+                                         ACTUAL_RESULT, EXPECTED_RESULT,
+                                         ACTUAL_RESULT == EXPECTED_RESULT);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    case 10: {
         // --------------------------------------------------------------------
         // TESTING fabs
         // Concerns: Forwarding to the right routines
@@ -441,7 +554,7 @@ int main(int argc, char* argv[])
         // Testing: fabs
         // --------------------------------------------------------------------
 
-        if (verbose1) bsl::cout << "fabs Decimal64 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "fabs Decimal64 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal64 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -479,19 +592,17 @@ int main(int argc, char* argv[])
             for (long long tiM = 0; tiM < numMantissas; ++tiM) {
                 for (  int tiE = 0; tiE < numExps;      ++tiE) {
                     const TYPE value =
-                            makeNumber(mantissas[tiM], exps[tiE]);
+                        makeNumber(mantissas[tiM], exps[tiE]);
 
                     // Test the value of what quantum returns:
                     ASSERT(Util::fabs(value) ==
                            makeNumber(
-                                     bsl::max(mantissas[tiM], -mantissas[tiM]),
-                                                                   exps[tiE]));
+                               bsl::max(mantissas[tiM], -mantissas[tiM]),
+                               exps[tiE]));
                 }
             }
-
-
         }
-        if (verbose1) bsl::cout << "fabs Decimal128 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "fabs Decimal128 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal128 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -539,7 +650,7 @@ int main(int argc, char* argv[])
             }
         }
     } break;
-    case 8: {
+    case 9: {
         // --------------------------------------------------------------------
         // TESTING quantize
         // Concerns: Forwarding to the right routines
@@ -549,7 +660,7 @@ int main(int argc, char* argv[])
         // Testing: quantize
         // --------------------------------------------------------------------
 
-        if (verbose1) bsl::cout << "quantize Decimal64 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "quantize Decimal64 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal64 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -629,18 +740,23 @@ int main(int argc, char* argv[])
                             makeNumber(mantissas[tiM], exps[tiE]);
 
                     // Test all special cases on both sides:
-                    // o sNaN
-                    // o qNaN
-                    // o +Inf
-                    // o -Inf
+                    //
+                    //: o sNaN
+                    //: o qNaN
+                    //: o +Inf
+                    //: o -Inf
+                    //
                     // Concern: quantize with NaN in either parameter must
                     // return a NaN.
+                    //
                     // Concern: quantize of NaN and Inf must set the invalid
                     // exception bit in the flags.  The Invalid bit must not be
                     // set for NaN/NaN cases.  This concern isn't presently
                     // tested.
+                    //
                     // Concern: Infinity by infinity must return an infinity
                     // with the sign of the first argument
+
                     ASSERT(Util::isNan(Util::quantize(value, sNaN)));
                     ASSERT(Util::isNan(Util::quantize(value, qNaN)));
                     ASSERT(Util::isNan(Util::quantize(value, pInf)));
@@ -661,23 +777,22 @@ int main(int argc, char* argv[])
             for (long long tiM = 0; tiM < numMantissas; ++tiM) {
                 for (  int tiE = 0; tiE < numExps;      ++tiE) {
                     const TYPE lhs =
-                               makeNumber(mantissas[tiM], exps[tiE]);
+                        makeNumber(mantissas[tiM], exps[tiE]);
 
                     for (long long tjM = 0; tjM < numMantissas; ++tjM) {
                         for (  int tjE = 0; tjE < numExps;      ++tjE) {
                             const TYPE rhs =
-                               makeNumber(mantissas[tjM], exps[tjE]);
+                                makeNumber(mantissas[tjM], exps[tjE]);
 
                             (void) rhs;
                             (void) lhs;
 
-                            //TODO: Find out why this test fails:
                             #if 0
                             LOOP4_ASSERT(mantissas[tiM], exps[tiE],
                                          mantissas[tjM], exps[tjE],
                                          Util::sameQuantum(
-                                                      Util::quantize(lhs, rhs),
-                                                      rhs));
+                                             Util::quantize(lhs, rhs),
+                                             rhs));
                             #endif
                         }
                     }
@@ -687,7 +802,7 @@ int main(int argc, char* argv[])
 
         // TODO: Make the Decimal128 variant.
     } break;
-    case 7: {
+    case 8: {
         // --------------------------------------------------------------------
         // TESTING quantum
         // Concerns: Forwarding to the right routines
@@ -697,7 +812,7 @@ int main(int argc, char* argv[])
         // Testing: quantum
         // --------------------------------------------------------------------
 
-        if (verbose1) bsl::cout << "quantum Decimal64 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "quantum Decimal64 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal64 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -738,16 +853,14 @@ int main(int argc, char* argv[])
             for (long long tiM = 0; tiM < numMantissas; ++tiM) {
                 for (  int tiE = 0; tiE < numExps;      ++tiE) {
                     const TYPE value =
-                            makeNumber(mantissas[tiM], exps[tiE]);
+                        makeNumber(mantissas[tiM], exps[tiE]);
 
                     // Test the value of what quantum returns:
                     ASSERT(Util::quantum(value) == exps[tiE]);
                 }
             }
-
-
         }
-        if (verbose1) bsl::cout << "quantum Decimal128 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "quantum Decimal128 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal128 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -757,28 +870,40 @@ int main(int argc, char* argv[])
             // contract for makeDecimalRaw.
 
             // All special case values:
-            // o signaling NaN     (sNaN)
+            //: o signaling NaN     (sNaN)
+
             const TYPE sNaN(NumLim::signaling_NaN());
-            // o quiet NaN         (qNaN)
+
+            //: o quiet NaN         (qNaN)
+
             const TYPE qNaN(NumLim::quiet_NaN());
-            // o positive Infinity (+Inf)
+
+            //: o positive Infinity (+Inf)
+
             const TYPE pInf(NumLim::infinity());
-            // o negative Infinity (-Inf)
+
+            //: o negative Infinity (-Inf)
+
             const TYPE nInf(-pInf);
 
             // Test that all special cases fail.
             {
                 AssertFailureHandlerGuard g(bsls::AssertTest::failTestDriver);
-                // o sNaN
+
+                //: o sNaN
+
                 BSLS_ASSERTTEST_ASSERT_FAIL(Util::quantum(sNaN));
 
-                // o qNaN
+                //: o qNaN
+
                 BSLS_ASSERTTEST_ASSERT_FAIL(Util::quantum(qNaN));
 
-                // o +Inf
+                //: o +Inf
+
                 BSLS_ASSERTTEST_ASSERT_FAIL(Util::quantum(pInf));
 
-                // o -Inf
+                //: o -Inf
+
                 BSLS_ASSERTTEST_ASSERT_FAIL(Util::quantum(nInf));
             }
 
@@ -788,7 +913,7 @@ int main(int argc, char* argv[])
             for (long long tiM = 0; tiM < numMantissas; ++tiM) {
                 for (  int tiE = 0; tiE < numExps;      ++tiE) {
                     const TYPE value =
-                            makeNumber(mantissas[tiM], exps[tiE]);
+                        makeNumber(mantissas[tiM], exps[tiE]);
 
                     // Test the value of what quantum returns:
                     ASSERT(Util::quantum(value) == exps[tiE]);
@@ -796,7 +921,7 @@ int main(int argc, char* argv[])
             }
         }
     } break;
-    case 6: {
+    case 7: {
         // --------------------------------------------------------------------
         // TESTING sameQuantum
         // Concerns: Forwarding to the right routines
@@ -806,7 +931,7 @@ int main(int argc, char* argv[])
         // Testing: sameQuantum
         // --------------------------------------------------------------------
 
-        if (verbose1) bsl::cout << "sameQuantum Decimal64 tests..."
+        if (verbose) bsl::cout << "sameQuantum Decimal64 tests..."
                                 << bsl::endl;
 
         {
@@ -819,39 +944,49 @@ int main(int argc, char* argv[])
 
 
             // All special case values:
-            // o signaling NaN     (sNaN)
+            //: o signaling NaN     (sNaN)
+
             const TYPE sNaN(NumLim::signaling_NaN());
-            // o quiet NaN         (qNaN)
+
+            //: o quiet NaN         (qNaN)
+
             const TYPE qNaN(NumLim::quiet_NaN());
-            // o positive Infinity (+Inf)
+
+            //: o positive Infinity (+Inf)
+
             const TYPE pInf(NumLim::infinity());
-            // o negative Infinity (-Inf)
+
+            //: o negative Infinity (-Inf)
+
             const TYPE nInf(-pInf);
 
-            // Test all special cases with each other,
-            // organized by LHS.
+            // Test all special cases with each other, organized by LHS.
 
-            // o sNaN
+            //: o sNaN
+
             ASSERT( Util::sameQuantum(sNaN, sNaN));
             ASSERT( Util::sameQuantum(sNaN, qNaN));
             ASSERT(!Util::sameQuantum(sNaN, pInf));
             ASSERT(!Util::sameQuantum(sNaN, nInf));
 
-            // o qNaN
+            //: o qNaN
+
             ASSERT( Util::sameQuantum(qNaN, sNaN));
             ASSERT( Util::sameQuantum(qNaN, qNaN));
             ASSERT(!Util::sameQuantum(qNaN, pInf));
             ASSERT(!Util::sameQuantum(qNaN, nInf));
 
             // Note that +Inf compares equal to all inf values
-            // o +Inf
+            //: o +Inf
+
             ASSERT(!Util::sameQuantum(pInf, sNaN));
             ASSERT(!Util::sameQuantum(pInf, qNaN));
             ASSERT( Util::sameQuantum(pInf, pInf));
             ASSERT( Util::sameQuantum(pInf, nInf));
 
             // Note that -Inf compares equal to all inf values
-            // o -Inf
+            //: o -Inf
+
             ASSERT(!Util::sameQuantum(nInf, sNaN));
             ASSERT(!Util::sameQuantum(nInf, qNaN));
             ASSERT( Util::sameQuantum(nInf, pInf));
@@ -863,13 +998,13 @@ int main(int argc, char* argv[])
             for (long long tiM = 0; tiM < numMantissas; ++tiM) {
                 for (  int tiE = 0; tiE < numExps;      ++tiE) {
                     const TYPE value =
-                            makeNumber(mantissas[tiM], exps[tiE]);
+                        makeNumber(mantissas[tiM], exps[tiE]);
 
                     // Test all special cases on both sides:
-                    // o sNaN
-                    // o qNaN
-                    // o +Inf
-                    // o -Inf
+                    //: o sNaN
+                    //: o qNaN
+                    //: o +Inf
+                    //: o -Inf
                     ASSERT(!Util::sameQuantum(value, sNaN));
                     ASSERT(!Util::sameQuantum(value, qNaN));
                     ASSERT(!Util::sameQuantum(value, pInf));
@@ -889,23 +1024,24 @@ int main(int argc, char* argv[])
             for (long long tiM = 0; tiM < numMantissas; ++tiM) {
                 for (  int tiE = 0; tiE < numExps;      ++tiE) {
                     const TYPE lhs =
-                               makeNumber(mantissas[tiM], exps[tiE]);
+                        makeNumber(mantissas[tiM], exps[tiE]);
 
                     for (long long tjM = 0; tjM < numMantissas; ++tjM) {
                         for (  int tjE = 0; tjE < numExps;      ++tjE) {
                             const TYPE rhs =
-                               makeNumber(mantissas[tjM], exps[tjE]);
+                                makeNumber(mantissas[tjM], exps[tjE]);
 
                             LOOP4_ASSERT(mantissas[tiM], exps[tiE],
                                          mantissas[tjM], exps[tjE],
-                                (tiE == tjE) == Util::sameQuantum(lhs, rhs));
+                                         (tiE == tjE) ==
+                                         Util::sameQuantum(lhs, rhs));
                         }
                     }
                 }
             }
         }
 
-        if (verbose1) bsl::cout << "sameQuantum Decimal128 tests..."
+        if (verbose) bsl::cout << "sameQuantum Decimal128 tests..."
                                 << bsl::endl;
 
         {
@@ -962,7 +1098,7 @@ int main(int argc, char* argv[])
             for (long long tiM = 0; tiM < numMantissas; ++tiM) {
                 for (  int tiE = 0; tiE < numExps;      ++tiE) {
                     const TYPE value =
-                            makeNumber(mantissas[tiM], exps[tiE]);
+                        makeNumber(mantissas[tiM], exps[tiE]);
 
                     // Test all special cases on both sides:
                     // o sNaN
@@ -995,16 +1131,17 @@ int main(int argc, char* argv[])
                             const TYPE rhs =
                                makeNumber(mantissas[tjM], exps[tjE]);
 
+                            // Quanta is unspecified if 'mantissa == 0'.
                             LOOP4_ASSERT(mantissas[tiM], exps[tiE],
                                          mantissas[tjM], exps[tjE],
-                                (tiE == tjE) == Util::sameQuantum(lhs, rhs));
+                                  (tiE == tjE) == Util::sameQuantum(lhs, rhs));
                         }
                     }
                 }
             }
         }
     } break;
-    case 5: {
+    case 6: {
         // --------------------------------------------------------------------
         // TESTING isFinite
         // Concerns: Forwarding to the right routines
@@ -1014,7 +1151,7 @@ int main(int argc, char* argv[])
         // Testing: isFinite
         // --------------------------------------------------------------------
 
-        if (verbose1) bsl::cout << "isFinite Decimal64 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "isFinite Decimal64 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal64 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -1061,7 +1198,7 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        if (verbose1) bsl::cout << "isFinite Decimal128 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "isFinite Decimal128 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal128 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -1071,27 +1208,38 @@ int main(int argc, char* argv[])
             // contract for makeDecimalRaw.
 
             // All special case values:
-            // o signaling NaN     (sNaN)
+            //: o signaling NaN     (sNaN)
+
             const TYPE sNaN(NumLim::signaling_NaN());
-            // o quiet NaN         (qNaN)
+
+            //: o quiet NaN         (qNaN)
+
             const TYPE qNaN(NumLim::quiet_NaN());
-            // o positive Infinity (+Inf)
+
+            //: o positive Infinity (+Inf)
+
             const TYPE pInf(NumLim::infinity());
-            // o negative Infinity (-Inf)
+
+            //: o negative Infinity (-Inf)
+
             const TYPE nInf(-pInf);
 
             // Test that all special cases fail.
             {
-                // o sNaN
+                //: o sNaN
+
                 ASSERT(!Util::isFinite(sNaN));
 
-                // o qNaN
+                //: o qNaN
+
                 ASSERT(!Util::isFinite(qNaN));
 
-                // o +Inf
+                //: o +Inf
+
                 ASSERT(!Util::isFinite(pInf));
 
-                // o -Inf
+                //: o -Inf
+
                 ASSERT(!Util::isFinite(nInf));
             }
 
@@ -1109,7 +1257,7 @@ int main(int argc, char* argv[])
             }
         }
     } break;
-    case 4: {
+    case 5: {
         // --------------------------------------------------------------------
         // TESTING isInf
         // Concerns: Forwarding to the right routines
@@ -1119,7 +1267,7 @@ int main(int argc, char* argv[])
         // Testing: isInf
         // --------------------------------------------------------------------
 
-        if (verbose1) bsl::cout << "isInf Decimal64 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "isInf Decimal64 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal64 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -1129,27 +1277,38 @@ int main(int argc, char* argv[])
             // contract for makeDecimalRaw.
 
             // All special case values:
-            // o signaling NaN     (sNaN)
+            //: o signaling NaN     (sNaN)
+
             const TYPE sNaN(NumLim::signaling_NaN());
-            // o quiet NaN         (qNaN)
+
+            //: o quiet NaN         (qNaN)
+
             const TYPE qNaN(NumLim::quiet_NaN());
-            // o positive Infinity (+Inf)
+
+            //: o positive Infinity (+Inf)
+
             const TYPE pInf(NumLim::infinity());
-            // o negative Infinity (-Inf)
+
+            //: o negative Infinity (-Inf)
+
             const TYPE nInf(-pInf);
 
             // Test that all special cases fail.
             {
-                // o sNaN
+                //: o sNaN
+
                 ASSERT(!Util::isInf(sNaN));
 
-                // o qNaN
+                //: o qNaN
+
                 ASSERT(!Util::isInf(qNaN));
 
-                // o +Inf
+                //: o +Inf
+
                 ASSERT( Util::isInf(pInf));
 
-                // o -Inf
+                //: o -Inf
+
                 ASSERT( Util::isInf(nInf));
             }
 
@@ -1166,7 +1325,7 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        if (verbose1) bsl::cout << "isInf Decimal128 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "isInf Decimal128 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal128 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -1176,13 +1335,21 @@ int main(int argc, char* argv[])
             // contract for makeDecimalRaw.
 
             // All special case values:
-            // o signaling NaN     (sNaN)
+
+            //: o signaling NaN     (sNaN)
+
             const TYPE sNaN(NumLim::signaling_NaN());
-            // o quiet NaN         (qNaN)
+
+            //: o quiet NaN         (qNaN)
+
             const TYPE qNaN(NumLim::quiet_NaN());
-            // o positive Infinity (+Inf)
+
+            //: o positive Infinity (+Inf)
+
             const TYPE pInf(NumLim::infinity());
-            // o negative Infinity (-Inf)
+
+            //: o negative Infinity (-Inf)
+
             const TYPE nInf(-pInf);
 
             // Test that all special cases fail.
@@ -1214,7 +1381,7 @@ int main(int argc, char* argv[])
             }
         }
     } break;
-    case 3: {
+    case 4: {
         // --------------------------------------------------------------------
         // TESTING isUnordered
         // Concerns: Forwarding to the right routines
@@ -1224,7 +1391,7 @@ int main(int argc, char* argv[])
         // Testing: isUnordered
         // --------------------------------------------------------------------
 
-        if (verbose1) bsl::cout << "isUnordered Decimal64 tests..."
+        if (verbose) bsl::cout << "isUnordered Decimal64 tests..."
                                 << bsl::endl;
         {
             typedef BDEC::Decimal64 TYPE;
@@ -1235,40 +1402,51 @@ int main(int argc, char* argv[])
             // contract for makeDecimalRaw.
 
             // All special case values:
-            // o signaling NaN     (sNaN)
+            //: o signaling NaN     (sNaN)
+
             const TYPE sNaN(NumLim::signaling_NaN());
-            // o quiet NaN         (qNaN)
+
+            //: o quiet NaN         (qNaN)
+
             const TYPE qNaN(NumLim::quiet_NaN());
-            // o positive Infinity (+Inf)
+
+            //: o positive Infinity (+Inf)
+
             const TYPE pInf(NumLim::infinity());
-            // o negative Infinity (-Inf)
+
+            //: o negative Infinity (-Inf)
+
             const TYPE nInf(-pInf);
 
             {
                 // Test all special cases with each other,
                 // organized by LHS.
 
-                // o sNaN
+                //: o sNaN
+
                 ASSERT( Util::isUnordered(sNaN, sNaN));
                 ASSERT( Util::isUnordered(sNaN, qNaN));
                 ASSERT( Util::isUnordered(sNaN, pInf));
                 ASSERT( Util::isUnordered(sNaN, nInf));
 
-                // o qNaN
+                //: o qNaN
+
                 ASSERT( Util::isUnordered(qNaN, sNaN));
                 ASSERT( Util::isUnordered(qNaN, qNaN));
                 ASSERT( Util::isUnordered(qNaN, pInf));
                 ASSERT( Util::isUnordered(qNaN, nInf));
 
                 // Note that +Inf compares equal to all inf values
-                // o +Inf
+                //: o +Inf
+
                 ASSERT( Util::isUnordered(pInf, sNaN));
                 ASSERT( Util::isUnordered(pInf, qNaN));
                 ASSERT(!Util::isUnordered(pInf, pInf));
                 ASSERT(!Util::isUnordered(pInf, nInf));
 
                 // Note that -Inf compares equal to all inf values
-                // o -Inf
+                //: o -Inf
+
                 ASSERT( Util::isUnordered(nInf, sNaN));
                 ASSERT( Util::isUnordered(nInf, qNaN));
                 ASSERT(!Util::isUnordered(nInf, pInf));
@@ -1276,18 +1454,20 @@ int main(int argc, char* argv[])
             }
 
 
-            // Iterate through all possible pairings of mantissa and
-            // exponent, and build Decimal64 values for each of them.
+            // Iterate through all possible pairings of mantissa and exponent,
+            // and build Decimal64 values for each of them.
             for (long long tiM = 0; tiM < numMantissas; ++tiM) {
                 for (  int tiE = 0; tiE < numExps;      ++tiE) {
                     const TYPE value =
                             makeNumber(mantissas[tiM], exps[tiE]);
 
                     // Test all special cases on both sides:
-                    // o sNaN
-                    // o qNaN
-                    // o +Inf
-                    // o -Inf
+                    //
+                    //: o sNaN
+                    //: o qNaN
+                    //: o +Inf
+                    //: o -Inf
+
                     ASSERT( Util::isUnordered(value, sNaN));
                     ASSERT( Util::isUnordered(value, qNaN));
                     ASSERT(!Util::isUnordered(value, pInf));
@@ -1301,15 +1481,15 @@ int main(int argc, char* argv[])
             }
         }
 
-        if (verbose1) bsl::cout << "isUnordered Decimal128 tests..."
+        if (verbose) bsl::cout << "isUnordered Decimal128 tests..."
                                 << bsl::endl;
         {
             typedef BDEC::Decimal128 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
             NumberMaker<TYPE> makeNumber;
 
-            // Test for isNan, which depends upon the strict, narrow
-            // contract for makeDecimalRaw.
+            // Test for isNan, which depends upon the strict, narrow contract
+            // for makeDecimalRaw.
 
             // All special case values:
             // o signaling NaN     (sNaN)
@@ -1378,7 +1558,7 @@ int main(int argc, char* argv[])
             }
         }
     } break;
-    case 2: {
+    case 3: {
         // --------------------------------------------------------------------
         // TESTING isNan
         // Concerns: Forwarding to the right routines
@@ -1388,7 +1568,7 @@ int main(int argc, char* argv[])
         // Testing: isNan
         // --------------------------------------------------------------------
 
-        if (verbose1) bsl::cout << "isNan Decimal64 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "isNan Decimal64 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal64 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -1435,7 +1615,7 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        if (verbose1) bsl::cout << "isNan Decimal128 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "isNan Decimal128 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal128 TYPE;
             typedef bsl::numeric_limits<TYPE> NumLim;
@@ -1483,6 +1663,202 @@ int main(int argc, char* argv[])
             }
         }
     } break;
+    case 2: {
+        // --------------------------------------------------------------------
+        // TESTING Test apparatus
+        // Concerns: Branching and forwarding to the right routines
+        // Plan: Try with zero and non-zero mantissas, comparing against
+        // preset bit-fields.
+        // Testing: makeDecimalRaw64Zero and makeDecimalRaw128Zero
+        // --------------------------------------------------------------------
+        if (verbose) bsl::cout << "\nTest apparatus"
+                                << "\n==============" << bsl::endl;
+
+        if (veryVerbose) bsl::cout << "makeDecimalRawNNZero functions"
+                                          << bsl::endl;
+
+        {
+            {
+                BDEC::Decimal64 ACTUAL   = makeDecimalRaw64Zero  (42, 5);
+                BDEC::Decimal64 EXPECTED = Util::makeDecimalRaw64(42, 5);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 8));
+            }
+            {
+                BDEC::Decimal64 ACTUAL   = makeDecimalRaw64Zero  (42u, 5);
+                BDEC::Decimal64 EXPECTED = Util::makeDecimalRaw64(42u, 5);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 8));
+            }
+            {
+                BDEC::Decimal64 ACTUAL   = makeDecimalRaw64Zero  (42ll, 5);
+                BDEC::Decimal64 EXPECTED = Util::makeDecimalRaw64(42ll, 5);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 8));
+            }
+            {
+                BDEC::Decimal64 ACTUAL   = makeDecimalRaw64Zero  (42ull, 5);
+                BDEC::Decimal64 EXPECTED = Util::makeDecimalRaw64(42ull, 5);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 8));
+            }
+
+            {
+                BDEC::Decimal64 d0e0 = makeDecimalRaw64Zero(0, 0);
+                unsigned long long x0e0 = 0x2238000000000000ull;
+                ASSERT(!memcmp(&d0e0, &x0e0, 8));
+            }
+            {
+                BDEC::Decimal64 d0e0 = makeDecimalRaw64Zero(0u, 0);
+                unsigned long long x0e0 = 0x2238000000000000ull;
+                ASSERT(!memcmp(&d0e0, &x0e0, 8));
+            }
+            {
+                BDEC::Decimal64 d0e0 = makeDecimalRaw64Zero(0ll, 0);
+                unsigned long long x0e0 = 0x2238000000000000ull;
+                ASSERT(!memcmp(&d0e0, &x0e0, 8));
+            }
+            {
+                BDEC::Decimal64 d0e0 = makeDecimalRaw64Zero(0ull, 0);
+                unsigned long long x0e0 = 0x2238000000000000ull;
+                ASSERT(!memcmp(&d0e0, &x0e0, 8));
+            }
+
+            {
+                BDEC::Decimal64 d0e5 = makeDecimalRaw64Zero(0, 5);
+                unsigned long long x0e5 = 0x224C000000000000ull;
+                ASSERT(!memcmp(&d0e5, &x0e5, 8));
+            }
+            {
+                BDEC::Decimal64 d0e5 = makeDecimalRaw64Zero(0u, 5);
+                unsigned long long x0e5 = 0x224C000000000000ull;
+                ASSERT(!memcmp(&d0e5, &x0e5, 8));
+            }
+            {
+                BDEC::Decimal64 d0e5 = makeDecimalRaw64Zero(0ll, 5);
+                unsigned long long x0e5 = 0x224C000000000000ull;
+                ASSERT(!memcmp(&d0e5, &x0e5, 8));
+            }
+            {
+                BDEC::Decimal64 d0e5 = makeDecimalRaw64Zero(0ull, 5);
+                unsigned long long x0e5 = 0x224C000000000000ull;
+                ASSERT(!memcmp(&d0e5, &x0e5, 8));
+            }
+
+            {
+                BDEC::Decimal64 d0em5 = makeDecimalRaw64Zero(0, -5);
+                unsigned long long x0em5 = 0x2224000000000000ull;
+                ASSERT(!memcmp(&d0em5, &x0em5, 8));
+            }
+            {
+                BDEC::Decimal64 d0em5 = makeDecimalRaw64Zero(0u, -5);
+                unsigned long long x0em5 = 0x2224000000000000ull;
+                ASSERT(!memcmp(&d0em5, &x0em5, 8));
+            }
+            {
+                BDEC::Decimal64 d0em5 = makeDecimalRaw64Zero(0ll, -5);
+                unsigned long long x0em5 = 0x2224000000000000ull;
+                ASSERT(!memcmp(&d0em5, &x0em5, 8));
+            }
+            {
+                BDEC::Decimal64 d0em5 = makeDecimalRaw64Zero(0ull, -5);
+                unsigned long long x0em5 = 0x2224000000000000ull;
+                ASSERT(!memcmp(&d0em5, &x0em5, 8));
+            }
+
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero  (42, 5);
+                BDEC::Decimal128 EXPECTED = Util::makeDecimalRaw128(42, 5);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero  (42u, 5);
+                BDEC::Decimal128 EXPECTED = Util::makeDecimalRaw128(42u, 5);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero  (42ll, 5);
+                BDEC::Decimal128 EXPECTED = Util::makeDecimalRaw128(42ll, 5);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero  (42ull, 5);
+                BDEC::Decimal128 EXPECTED = Util::makeDecimalRaw128(42ull, 5);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0, 0);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2208000000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0u, 0);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2208000000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0ll, 0);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2208000000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0ull, 0);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2208000000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0, 5);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2209400000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0u, 5);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2209400000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0ll, 5);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2209400000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0ull, 5);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2209400000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0, -5);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2206C00000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0u, -5);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2206C00000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0ll, -5);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2206C00000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+            {
+                BDEC::Decimal128 ACTUAL   = makeDecimalRaw128Zero(0ull, -5);
+                BloombergLP::bdldfp::Uint128 EXPECTED(
+                                 0x2206C00000000000ull, 0x0000000000000000ull);
+                ASSERT(!memcmp(&ACTUAL, &EXPECTED, 16));
+            }
+        }
+    }
     case 1: {
         // --------------------------------------------------------------------
         // TESTING Breathing test
@@ -1490,17 +1866,19 @@ int main(int argc, char* argv[])
         // Plan: Try all operations see if basics work
         // Testing: all functions
         // --------------------------------------------------------------------
-        if (verbose1) bsl::cout << "\nBreathing Test"
-                                << "\n==============" << bsl::endl;
+        if (verbose) bsl::cout << bsl::endl
+                               << "Breathing Test" << bsl::endl
+                               << "==============" << bsl::endl;
 
-        if (verbose2) bsl::cout << "makeDecimalNNRaw functions" << bsl::endl;
+        if (veryVerbose) bsl::cout << "makeDecimalNNRaw functions"
+                                   << bsl::endl;
 
-        if (verbose3) bsl::cout << "makeDecimalRaw32" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "makeDecimalRaw32" << bsl::endl;
 
         ASSERT(Util::makeDecimalRaw32(314159, -5) ==
                BDLDFP_DECIMAL_DF(3.14159));
 
-        if (verbose3) bsl::cout << "makeDecimalRaw64" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "makeDecimalRaw64" << bsl::endl;
 
         ASSERT(Util::makeDecimalRaw64(314159, -5) ==
                BDLDFP_DECIMAL_DD(3.14159));
@@ -1511,8 +1889,11 @@ int main(int argc, char* argv[])
         ASSERT(Util::makeDecimalRaw64(314159ull, -5) ==
                BDLDFP_DECIMAL_DD(3.14159));
 
-        if (verbose3) bsl::cout << "makeDecimalRaw128" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "makeDecimalRaw128" << bsl::endl;
 
+        // XLC versions prior to 12.0 incorrectly pass decimal128 values in
+        // some contexts (0x0c00 -> 12.00)
+#if defined(BSLS_PLATFORM_CMP_IBM) && (BSLS_PLATFORM_CMP_VERSION >= 0x0c00)
         ASSERT(Util::makeDecimalRaw128(314159, -5) ==
                BDLDFP_DECIMAL_DL(3.14159));
         ASSERT(Util::makeDecimalRaw128(314159u, -5) ==
@@ -1521,17 +1902,21 @@ int main(int argc, char* argv[])
                BDLDFP_DECIMAL_DL(3.14159));
         ASSERT(Util::makeDecimalRaw128(314159ull, -5) ==
                BDLDFP_DECIMAL_DL(3.14159));
+#endif
 
-        if (verbose2) bsl::cout << "makeDecimalNN functions" << bsl::endl;
+        if (veryVerbose) bsl::cout << "makeDecimalNN functions" << bsl::endl;
 
-        if (verbose3) bsl::cout << "makeDecimal64" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "makeDecimal64" << bsl::endl;
 
 #if defined(BSLS_PLATFORM_CMP_GNU) && BSLS_PLATFORM_CMP_VER_MAJOR > 40700
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverflow"
 #endif
-
         // Test some zero-rounded values.
+
+        // Note that the following code does (and MUST) generate warnings on
+        // gcc.  Unfortunately, the pragma to disable that warning (above), is
+        // ignored.
 
         ASSERT(Util::makeDecimal64(-1234567890123456ll, -382-16+1) ==
                BDLDFP_DECIMAL_DD(-1.234567890123456e-382));
@@ -1549,7 +1934,7 @@ int main(int argc, char* argv[])
         ASSERT(Util::makeDecimal64(314159u, -5) ==
                BDLDFP_DECIMAL_DD(3.14159));
 
-        if (verbose2) bsl::cout << "parseDecimalNN functions" << bsl::endl;
+        if (veryVerbose) bsl::cout << "parseDecimalNN functions" << bsl::endl;
 
         {
             BDEC::Decimal32 result;
@@ -1590,7 +1975,7 @@ int main(int argc, char* argv[])
                    == result);
         }
 
-        if (verbose2) bsl::cout << "fma functions" << bsl::endl;
+        if (veryVerbose) bsl::cout << "fma functions" << bsl::endl;
 
         // TODO TBD - How to test if fma really does not round too early?
 
@@ -1602,7 +1987,7 @@ int main(int argc, char* argv[])
                          BDLDFP_DECIMAL_DL(4.),
                          BDLDFP_DECIMAL_DL(5.)) == BDLDFP_DECIMAL_DL(17.));
 
-        if (verbose2) bsl::cout << "fabs functions" << bsl::endl;
+        if (veryVerbose) bsl::cout << "fabs functions" << bsl::endl;
 
         ASSERT(Util::fabs(BDLDFP_DECIMAL_DF(-1.234567e-94))
                == BDLDFP_DECIMAL_DF(1.234567e-94));
@@ -1614,6 +1999,10 @@ int main(int argc, char* argv[])
 
         // Test using zero-rounded numbers
 
+        // Note that the following code does (and MUST) generate warnings on
+        // gcc.  Unfortunately, the pragma to disable that warning (above), is
+        // ignored.
+
         ASSERT(Util::fabs(BDLDFP_DECIMAL_DD(-1.234567890123456e-382))
                == BDLDFP_DECIMAL_DD(1.234567890123456e-382));
         ASSERT(Util::fabs(BDLDFP_DECIMAL_DL(-1.234567890123456e-382))
@@ -1623,9 +2012,9 @@ int main(int argc, char* argv[])
 #pragma GCC diagnostic pop
 #endif
 
-        if (verbose2) bsl::cout << "Classification functions" << bsl::endl;
+        if (veryVerbose) bsl::cout << "Classification functions" << bsl::endl;
 
-        if (verbose3) bsl::cout << "Decimal32" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal32" << bsl::endl;
         {
             typedef BDEC::Decimal32 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -1703,7 +2092,7 @@ int main(int argc, char* argv[])
             #undef DECLIT
         }
 
-        if (verbose3) bsl::cout << "Decimal64" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal64" << bsl::endl;
         {
             typedef BDEC::Decimal64 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -1781,7 +2170,7 @@ int main(int argc, char* argv[])
             #undef DECLIT
         }
 
-        if (verbose3) bsl::cout << "Decimal128" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal128" << bsl::endl;
         {
             typedef BDEC::Decimal128 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -1859,9 +2248,9 @@ int main(int argc, char* argv[])
             #undef DECLIT
         }
 
-        if (verbose2) bsl::cout << "Comparison functions" << bsl::endl;
+        if (veryVerbose) bsl::cout << "Comparison functions" << bsl::endl;
 
-        if (verbose3) bsl::cout << "Decimal32" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal32" << bsl::endl;
         {
             typedef BDEC::Decimal32 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -1916,7 +2305,7 @@ int main(int argc, char* argv[])
             #undef DECLIT
         }
 
-        if (verbose3) bsl::cout << "Decimal64" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal64" << bsl::endl;
         {
             typedef BDEC::Decimal64 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -1971,7 +2360,7 @@ int main(int argc, char* argv[])
             #undef DECLIT
         }
 
-        if (verbose3) bsl::cout << "Decimal128" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal128" << bsl::endl;
         {
             typedef BDEC::Decimal128 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -2026,9 +2415,9 @@ int main(int argc, char* argv[])
             #undef DECLIT
         }
 
-        if (verbose2) bsl::cout << "Rounding functions" << bsl::endl;
+        if (veryVerbose) bsl::cout << "Rounding functions" << bsl::endl;
 
-        if (verbose3) bsl::cout << "Decimal32" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal32" << bsl::endl;
         {
             typedef BDEC::Decimal32 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -2085,7 +2474,7 @@ int main(int argc, char* argv[])
             #undef DECLIT
         }
 
-        if (verbose3) bsl::cout << "Decimal64" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal64" << bsl::endl;
         {
             typedef BDEC::Decimal64 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -2142,7 +2531,7 @@ int main(int argc, char* argv[])
             #undef DECLIT
         }
 
-        if (verbose3) bsl::cout << "Decimal128" << bsl::endl;
+        if (veryVeryVerbose) bsl::cout << "Decimal128" << bsl::endl;
         {
             typedef BDEC::Decimal128 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -2200,7 +2589,7 @@ int main(int argc, char* argv[])
         }
 
 
-        if (verbose1) bsl::cout << "sameQuantum 64 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "sameQuantum 64 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal64 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -2243,14 +2632,20 @@ int main(int argc, char* argv[])
             ASSERT(!Util::sameQuantum(Util::multiplyByPowerOf10(anInt, 5),
                                       Util::multiplyByPowerOf10(anInt, 4)));
 
-            ASSERT(Util::quantum(Util::multiplyByPowerOf10(anInt, 5)) ==
-                   Util::quantum(anInt) + 5);
+            ASSERT(Util::sameQuantum(Util::multiplyByPowerOf10(anInt, -4),
+                                     Util::multiplyByPowerOf10(anInt, -4)));
+
+            ASSERT(!Util::sameQuantum(Util::multiplyByPowerOf10(anInt, -5),
+                                      Util::multiplyByPowerOf10(anInt, -4)));
+
+            ASSERT(Util::quantum(Util::multiplyByPowerOf10(anInt, -5)) ==
+                   Util::quantum(anInt) - 5);
 
 
 
         }
 
-        if (verbose1) bsl::cout << "sameQuantum 128 tests..." << bsl::endl;
+        if (verbose) bsl::cout << "sameQuantum 128 tests..." << bsl::endl;
         {
             typedef BDEC::Decimal128 Tested;
             typedef bsl::numeric_limits<Tested> NumLim;
@@ -2497,7 +2892,7 @@ int main(int argc, char* argv[])
         bsl::string line;
         bsl::ifstream myfile(argv[2]);
         if (myfile.is_open()) {
-            while(getline(myfile, line)) {
+            while (getline(myfile, line)) {
                 bsl::vector<bsl::string> seglist;
                 split(seglist, line, '|');
 
@@ -2603,7 +2998,7 @@ int main(int argc, char* argv[])
         bsl::string line;
         bsl::ifstream myfile(argv[2]);
         if (myfile.is_open()) {
-            while(getline(myfile, line)) {
+            while (getline(myfile, line)) {
                 bsl::vector<bsl::string> seglist;
                 split(seglist, line, '|');
 
@@ -2699,29 +3094,17 @@ int main(int argc, char* argv[])
         bsls::Stopwatch s;
         s.start();
 
-        BDEC::Decimal64 total = BDEC::Decimal64(0.0);
         for (int iter = 0; iter < numIterations; ++iter) {
             for (int mi = 0; mi < numMantissas; ++mi) {
                 for (int ei = 0; ei < numExps; ++ei) {
                     BDEC::Decimal64 num =
                                   Util::makeDecimal64(mantissas[mi], exps[ei]);
-                    total += num;
+                    (void)num;
                 }
             }
         }
 
         const double totalTime = s.accumulatedWallTime();
-
-        // This prevents the compiler from optimizing away the test.
-        if (verbose2) {
-            if (total >= BDEC::Decimal64(0.0)) {
-                bsl::cout << "Total is non-negative" << bsl::endl;
-            }
-            else {
-                bsl::cout << "Total is negative" << bsl::endl;
-            }
-        }
-
         const double operationsPerSecond = numOperations / totalTime;
 
         bsl::cout << "Performance test: " << operationsPerSecond
@@ -2746,7 +3129,6 @@ int main(int argc, char* argv[])
         bsls::Stopwatch s;
         s.start();
 
-        BDEC::Decimal128 total = BDEC::Decimal128(0.0);
         for (int iter = 0; iter < numIterations; ++iter) {
             for (int mi = 0; mi < numMantissas; ++mi) {
 
@@ -2758,23 +3140,12 @@ int main(int argc, char* argv[])
 
                     BDEC::Decimal128 num =
                               Util::makeDecimalRaw128(mantissas[mi], exps[ei]);
-                    total += num;
+                    (void)num;
                 }
             }
         }
 
         const double totalTime = s.accumulatedWallTime();
-
-        // This prevents the compiler from optimizing away the test.
-        if (verbose2) {
-            if (total >= BDEC::Decimal64(0.0)) {
-                bsl::cout << "Total is non-negative" << bsl::endl;
-            }
-            else {
-                bsl::cout << "Total is negative" << bsl::endl;
-            }
-        }
-
         const double operationsPerSecond = numOperations / totalTime;
 
         bsl::cout << "Performance test: " << operationsPerSecond
@@ -2799,7 +3170,6 @@ int main(int argc, char* argv[])
         bsls::Stopwatch s;
         s.start();
 
-        BDEC::Decimal64 total = BDEC::Decimal64(0.0);
         for (int iter = 0; iter < numIterations; ++iter) {
             for (int mi = 0; mi < numMantissas; ++mi) {
 
@@ -2816,23 +3186,12 @@ int main(int argc, char* argv[])
 
                     BDEC::Decimal64 num =
                                Util::makeDecimalRaw64(mantissas[mi], exps[ei]);
-                    total += num;
+                    (void)num;
                 }
             }
         }
 
         const double totalTime = s.accumulatedWallTime();
-
-        // This prevents the compiler from optimizing away the test.
-        if (verbose2) {
-            if (total >= BDEC::Decimal64(0.0)) {
-                bsl::cout << "Total is non-negative" << bsl::endl;
-            }
-            else {
-                bsl::cout << "Total is negative" << bsl::endl;
-            }
-        }
-
         const double operationsPerSecond = numOperations / totalTime;
 
         bsl::cout << "Performance test: " << operationsPerSecond
@@ -2857,7 +3216,6 @@ int main(int argc, char* argv[])
         bsls::Stopwatch s;
         s.start();
 
-        BDEC::Decimal64 total = BDEC::Decimal64(0.0);
         for (int iter = 0; iter < numIterations; ++iter) {
             for (int mi = 0; mi < numMantissas; ++mi) {
 
@@ -2874,28 +3232,65 @@ int main(int argc, char* argv[])
                     BDEC::Decimal32 num =
                                Util::makeDecimalRaw32(
                                     static_cast<int>(mantissas[mi]), exps[ei]);
-                    total += BDEC::Decimal64(num);
+                    (void)num;
                 }
             }
         }
 
         const double totalTime = s.accumulatedWallTime();
-
-        // This prevents the compiler from optimizing away the test.
-        if (verbose2) {
-            if (total >= BDEC::Decimal64(0.0)) {
-                bsl::cout << "Total is non-negative" << bsl::endl;
-            }
-            else {
-                bsl::cout << "Total is negative" << bsl::endl;
-            }
-        }
-
         const double operationsPerSecond = numOperations / totalTime;
 
         bsl::cout << "Performance test: " << operationsPerSecond
                   << " makeDecimal32 operations per second." << bsl::endl;
         bsl::cout << "Total time: " << totalTime << " seconds." << bsl::endl;
+    } break;
+
+    case -9: {
+        // --------------------------------------------------------------------
+        // TESTING: Performance test of 'multiplyByPowerOf10'.
+        //
+        // Test the performance of 'makeDecimal64' by doing a configurable
+        // number of iterations of calls using a stopwatch to record the
+        // elapsed time and compute the number of operations 'makeDecimal64'
+        // performs per second.  An array of mantissas and exponents are used.
+        // --------------------------------------------------------------------
+
+        // Precompute some 'Decimal64's.
+        const int numDecimals = numMantissas * numExps;
+        BDEC::Decimal64 decimals[numDecimals];
+
+        for (int i = 0; i < numMantissas; ++i) {
+            for (int j = 0; j < numExps; ++j) {
+                decimals[i * numExps + j] =
+                                    Util::makeDecimal64(mantissas[i], exps[j]);
+            }
+        }
+
+        int numIterations = 1000;
+        int numOperations = numIterations * numDecimals * numExps;
+
+        // Accumulate the time elapsed in the test.
+        bsls::Stopwatch s;
+        s.start();
+
+        for (int iter = 0; iter < numIterations; ++iter) {
+            for (int di = 0; di < numDecimals; ++di) {
+                for (int ei = 0; ei < numExps; ++ei) {
+                    BDEC::Decimal64 result = Util::multiplyByPowerOf10(
+                        decimals[di], exps[ei]);
+                    (void)result;
+                }
+            }
+        }
+
+        const double totalTime = s.accumulatedWallTime();
+        const double operationsPerSecond = numOperations / totalTime;
+
+        bsl::cout << "Performance test: " << operationsPerSecond
+                  << " multiplyByPowerOf10 operations per second."
+                  << bsl::endl;
+        bsl::cout << "Total time: " << totalTime << " seconds." << bsl::endl;
+
     } break;
 
     default: {

@@ -7,12 +7,12 @@
 #endif
 BSLS_IDENT("$Id: $")
 
-//@PURPOSE: Provide a primitive type trait for bit-wise copyable classes.
+//@PURPOSE: Provide a trait to mark classes as bit-wise copyable.
 //
 //@CLASSES:
 //  bslalg::TypeTraitBitwiseCopyable: bit-wise copyable trait
 //
-//@SEE_ALSO: bslmf_typetraits
+//@SEE_ALSO:
 //
 //@DESCRIPTION: This component provides a single traits class,
 // 'bslalg::TypeTraitBitwiseCopyable'.  An object of a 'TYPE' that has the

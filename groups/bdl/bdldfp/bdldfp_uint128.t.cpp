@@ -15,8 +15,9 @@ using namespace bsl;
 using namespace bdldfp;
 
 // ============================================================================
-//                    STANDARD BDE ASSERT TEST MACRO
+//                    STANDARD BDE ASSERT TEST MACROS
 // ----------------------------------------------------------------------------
+
 static int testStatus = 0;
 
 static void aSsErT(int c, const char *s, int i)
@@ -33,9 +34,7 @@ int main(int argc, char *argv[])
 {
     int                 test = argc > 1 ? atoi(argv[1]) : 0;
     bool             verbose = argc > 2;
-    bool         veryVerbose = argc > 3;
-    bool     veryVeryVerbose = argc > 4;
-    bool veryVeryVeryVerbose = argc > 5;
+//    bool         veryVerbose = argc > 3;
 
     cout << "TEST " << __FILE__ << " CASE " << test << endl;
 
@@ -47,8 +46,9 @@ int main(int argc, char *argv[])
         // Plan: Try all operations see if basics work
         // Testing: all functions
         // --------------------------------------------------------------------
-        if (verbose) bsl::cout << "\nBreathing Test"
-                               << "\n==============" << bsl::endl;
+        if (verbose) bsl::cout << bsl::endl
+                               << "BREATHING TEST" << bsl::endl
+                               << "==============" << bsl::endl;
         Uint128 val = 127;
 
         val << 6;

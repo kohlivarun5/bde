@@ -7,12 +7,12 @@
 #endif
 BSLS_IDENT("$Id: $")
 
-//@PURPOSE: Provide a primitive type trait for bit-wise eq.-comparable classes.
+//@PURPOSE: Provide a trait to mark classes as bit-wise eq.-comparable.
 //
 //@CLASSES:
 //  bslalg::TypeTraitBitwiseEqualityComparable: bit-wise eq.-comparable trait
 //
-//@SEE_ALSO: bslmf_typetraits
+//@SEE_ALSO:
 //
 //@DESCRIPTION: This component provides a single traits class,
 // 'bslalg::TypeTraitBitwiseEqualityComparable'.  Two objects of a 'TYPE' that
