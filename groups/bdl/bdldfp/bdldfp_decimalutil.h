@@ -25,9 +25,8 @@ BSLS_IDENT("$Id$")
 //
 //@SEE ALSO: bdldfp_decimal, bdldfp_decimalplatform
 //
-//@DESCRIPTION:
-// This component provides utility functions for the decimal floating-point
-// types defined in 'bdldfp_decimal':
+//@DESCRIPTION: This component provides utility functions for the decimal
+// floating-point types defined in 'bdldfp_decimal':
 //
 //: o 'FP_XXX', C99 standard floating-point classification macros
 //:
@@ -80,6 +79,10 @@ BSLS_IDENT("$Id$")
 #include <bdldfp_decimal.h>
 #endif
 
+#ifndef INCLUDED_BDLDFP_DECIMALPLATFORM
+#include <bdldfp_decimalplatform.h>
+#endif
+
 #ifndef INCLUDED_BSLS_PLATFORM
 #include <bsls_platform.h>
 #endif
@@ -127,42 +130,48 @@ struct DecimalUtil {
 
                             // Creators functions
 
-    static Decimal32 makeDecimalRaw32 (int coeff, int exponent);
+    static Decimal32 makeDecimalRaw32 (int mantissa, int exponent);
         // Create a 'Decimal32' object representing a decimal floating point
         // number consisting of the specified 'mantissa' and 'exponent', with
-        // the sign given by the specified 'mantissa' (if signed). The
+        // the sign given by the specified 'mantissa' (if signed).  The
         // behavior is undefined unless '-9,999,999 <= mantissa <= 9,999,999'
         // and '-101 <= exponent <= 90'.
 
-    static Decimal64 makeDecimalRaw64 (int                coeff, int exponent);
-    static Decimal64 makeDecimalRaw64 (unsigned int       coeff, int exponent);
-    static Decimal64 makeDecimalRaw64 (long long          coeff, int exponent);
-    static Decimal64 makeDecimalRaw64 (unsigned long long coeff, int exponent);
+    static Decimal64 makeDecimalRaw64(int                mantissa,
+                                      int                exponent);
+    static Decimal64 makeDecimalRaw64(unsigned int       mantissa,
+                                      int                exponent);
+    static Decimal64 makeDecimalRaw64(long long          mantissa,
+                                      int                exponent);
+    static Decimal64 makeDecimalRaw64(unsigned long long mantissa,
+                                      int                exponent);
         // Create a 'Decimal64' object representing a decimal floating point
         // number consisting of the specified 'mantissa' and 'exponent', with
-        // the sign given by the specified 'mantissa' (if signed). The
-        // behavior is undefined unless
+        // the sign given by the specified 'mantissa' (if signed).  If
+        // 'mantissa' is 0, the  result is 0 but the quanta of the result is
+        // unspecified.  The behavior is undefined unless
         // '-9,999,999,999,999,999 <= mantissa <= 9,999,999,999,999,999' and
         // '-398 <= exponent <= 369'.
 
-    static Decimal128 makeDecimalRaw128(
-                                       int                coeff, int exponent);
-    static Decimal128 makeDecimalRaw128(
-                                       unsigned int       coeff, int exponent);
-    static Decimal128 makeDecimalRaw128(
-                                       long long          coeff, int exponent);
-    static Decimal128 makeDecimalRaw128(
-                                       unsigned long long coeff, int exponent);
-        // Create a 'Deciaml128' object representing a decimal floating
-        // point number consisting of the specified 'mantissa' and 'exponent',
-        // with the sign given by the specified 'mantissa' (if signed). The
+    static Decimal128 makeDecimalRaw128(int                mantissa,
+                                        int                exponent);
+    static Decimal128 makeDecimalRaw128(unsigned int       mantissa,
+                                        int                exponent);
+    static Decimal128 makeDecimalRaw128(long long          mantissa,
+                                        int                exponent);
+    static Decimal128 makeDecimalRaw128(unsigned long long mantissa,
+                                        int                exponent);
+        // Create a 'Deciaml128' object representing a decimal floating point
+        // number consisting of the specified 'mantissa' and 'exponent', with
+        // the sign given by the 'mantissa' (if signed).  If 'mantissa' is 0,
+        // the result is 0 but the quanta of the result is unspecified.  The
         // behavior is undefined unless '-6176 <= exponent <= 6111'.
 
-    static Decimal64 makeDecimal64(int                coeff, int exponent);
-    static Decimal64 makeDecimal64(unsigned int       coeff, int exponent);
-    static Decimal64 makeDecimal64(long long          coeff, int exponent);
-    static Decimal64 makeDecimal64(unsigned long long coeff, int exponent);
-        // Return a 'DecimalNN' object that has the specified 'coefficient' and
+    static Decimal64 makeDecimal64(int                mantissa, int exponent);
+    static Decimal64 makeDecimal64(unsigned int       mantissa, int exponent);
+    static Decimal64 makeDecimal64(long long          mantissa, int exponent);
+    static Decimal64 makeDecimal64(unsigned long long mantissa, int exponent);
+        // Return a 'DecimalNN' object that has the specified 'mantissa' and
         // 'exponent', rounded according to the current decimal rounding mode,
         // if necessary.  If an overflow condition occurs. store the value of
         // the macro 'ERANGE' into 'errno' and return infinity with the
@@ -171,48 +180,47 @@ struct DecimalUtil {
     static int parseDecimal32( Decimal32  *out, const char *str);
     static int parseDecimal64( Decimal64  *out, const char *str);
     static int parseDecimal128(Decimal128 *out, const char *str);
-
-    static int parseDecimal32( Decimal32  *out, const std::string& str);
-    static int parseDecimal64( Decimal64  *out, const std::string& str);
-    static int parseDecimal128(Decimal128 *out, const std::string& str);
+    static int parseDecimal32( Decimal32  *out, const bsl::string& str);
+    static int parseDecimal64( Decimal64  *out, const bsl::string& str);
+    static int parseDecimal128(Decimal128 *out, const bsl::string& str);
         // Load into the specified 'out' the decimal floating point number
         // described by the specified 'str'; return zero if the conversion was
         // successful and non-zero otherwise.  The value of 'out' is
         // unspecified if the function returns a non-zero value.
 
-    //TODO TBD priority 2
-    //static int parseDecimal32(const wchar_t      *str, Decimal32 *out);
-    //static int parseDecimal32(const std::wstring& str, Decimal32 *out);
+    // TODO TBD priority 2
+    // static int parseDecimal32(const wchar_t *str, Decimal32 *out);
+    // static int parseDecimal32(const std::wstring& str, Decimal32 *out);
 
                                   // math
 
     static Decimal64  fma(Decimal64  x, Decimal64  y, Decimal64  z);
     static Decimal128 fma(Decimal128 x, Decimal128 y, Decimal128 z);
-        // Compute and return the result of 'x * y + z', rounded as one ternary
-        // operation according to the current decimal floating point rounding
-        // mode.
+        // Return, using the specified 'x', 'y', and 'z', the value of the
+        // expression 'x * y + z', rounded as one ternary operation according
+        // to the current decimal floating point rounding mode.
 
-    //TODO TBD priority 2
-    //static Decimal32 nextafter(Decimal32 x, Decimal32 y);
+    // TODO TBD priority 2
+    // static Decimal32 nextafter(Decimal32 x, Decimal32 y);
         // Return the next representable floating point value following the
         // specified 'x' in the direction of the specified 'y'.  If 'x' or 'y'
         // is NaN, NaN is returned.  If 'x' and 'y' are equal, 'y' is returned.
-        // If 'x' is finite and the result would overflow an 'overflow
-        // exception' is raised and the function will return 'HUGE_VAL_D32'.
-        // If 'x' is not equal to 'y' and the correct result would be
-        // subnormal, zero or underflow a 'range error' occurs and the correct
-        // value - if representable -- or 0.0 is returned.
+        // If 'x' is finite and the result would overflow an
+        // 'overflow exception' is raised and the function will return
+        // 'HUGE_VAL_D32'.  If 'x' is not equal to 'y' and the correct result
+        // would be subnormal, zero or underflow a 'range error' occurs and the
+        // correct value - if representable -- or 0.0 is returned.
 
-    //TODO TBD priority N
-    //static Decimal32 remainder(Decimal32 x, Decimal32 y);
+    // TODO TBD priority N
+    // static Decimal32 remainder(Decimal32 x, Decimal32 y);
         // Return the next remainder of dividing of the specified 'x' with the
         // specified 'y' such as that the return value is 'x-n*y', where 'n' is
         // the nearest integer of the value of 'x/y'.  If the absolute value of
-        // the return value ('x-n*y') is 0.5, 'n' is chosen to be even.
-        // If 'x' or 'y' is NaN, NaN is returned.  If 'x' is infinity and 'y'
-        // is not NaN, the 'invalid floating point expection' is raised and NaN
-        // is returned.  If 'y' is zero and 'x' is not NaN, the 'invalid
-        // floating point expection' is raised and NaN is returned.
+        // the return value ('x-n*y') is 0.5, 'n' is chosen to be even.  If 'x'
+        // or 'y' is NaN, NaN is returned.  If 'x' is infinity and 'y' is not
+        // NaN, the 'invalid floating point expection' is raised and NaN is
+        // returned.  If 'y' is zero and 'x' is not NaN, the
+        // 'invalid floating point expection' is raised and NaN is returned.
 
                        // Selecting, converting functions
 
@@ -223,23 +231,22 @@ struct DecimalUtil {
         // absolute value of NaN is NaN.  The absolute values of negative zero
         // or infinity are positive zero and infinity respectively.
 
-    //TODO TBD priority 2
-    //static Decimal32 fmax(Decimal32 x, Decimal32 y);
+    // TODO TBD priority 2
+    // static Decimal32 fmax(Decimal32 x, Decimal32 y);
         // Return the larger value of the specified 'x' and 'y'.  If one
         // argument is NaN, return the other argument.  If both arguments are
         // NaN, return NaN.
 
-    //TODO TBD priority 2
-    //static Decimal32 fmin(Decimal32 x, Decimal32 y);
+    // TODO TBD priority 2
+    // static Decimal32 fmin(Decimal32 x, Decimal32 y);
         // Return the smaller value of the specified 'x' and 'y'.  If one
         // argument is NaN, return the other argument.  If both arguments are
         // NaN, return NaN.
 
-    //TODO TBD priority N
-    //static Decimal32 copysign(Decimal32 x, Decimal32 y);
+    // TODO TBD priority N static Decimal32 copysign(Decimal32 x, Decimal32 y);
         // Return a value whose absolute value matches that of the specified
-        // 'x' and whose sign bit matches that of the specified 'y'.  If 'x'
-        // is NaN, a NaN with the sign bit of 'y' is returned.
+        // 'x' and whose sign bit matches that of the specified 'y'.  If 'x' is
+        // NaN, a NaN with the sign bit of 'y' is returned.
 
                                // classification
 
@@ -272,23 +279,23 @@ struct DecimalUtil {
     static bool isInf(Decimal32  x);
     static bool isInf(Decimal64  x);
     static bool isInf(Decimal128 x);
-        // Return 'true' if the specified 'x' is an infinity value and
-        // 'false' otherwise.
-        // Note that this is equivalent to 'classify(x) == FP_INFINITE'.
+        // Return 'true' if the specified 'x' is an infinity value and 'false'
+        // otherwise.  Note that this is equivalent to
+        // 'classify(x) == FP_INFINITE'.
 
     static bool isFinite(Decimal32  x);
     static bool isFinite(Decimal64  x);
     static bool isFinite(Decimal128 x);
         // Return 'true' if the specified 'x' is not an infinity value or NaN
-        // and 'false' otherwise. Note that this is equivalent to
+        // and 'false' otherwise.  Note that this is equivalent to
         // 'classify(x) != FP_INFINITE && classify(x) != FP_NAN'.
 
     static bool isNormal(Decimal32  x);
     static bool isNormal(Decimal64  x);
     static bool isNormal(Decimal128 x);
         // Return 'true' if the specified 'x' is a normal value and 'false'
-        // otherwise.
-        // Note that this is equivalent to 'classify(x) == FP_NORMAL'.
+        // otherwise.  Note that this is equivalent to
+        // 'classify(x) == FP_NORMAL'.
 
                            // Comparison functions
 
@@ -298,12 +305,12 @@ struct DecimalUtil {
         // Return 'true' if either (or both) of the specified 'x' and 'y'
         // arguments is a NaN, or 'false' otherwise.
 
-    //TODO TBD priority E or 2
-    //static bool isGreater(Decimal32 x, Decimal32 y);
-    //static bool isGreaterEqual(Decimal32 x, Decimal32 y);
-    //static bool isLess(Decimal32 x, Decimal32 y);
-    //static bool isEqual(Decimal32 x, Decimal32 y);
-    //static bool isLessEqual(Decimal32 x, Decimal32 y);
+    // TODO TBD priority E or 2
+    // static bool isGreater(Decimal32 x, Decimal32 y);
+    // static bool isGreaterEqual(Decimal32 x, Decimal32 y);
+    // static bool isLess(Decimal32 x, Decimal32 y);
+    // static bool isEqual(Decimal32 x, Decimal32 y);
+    // static bool isLessEqual(Decimal32 x, Decimal32 y);
         // Compare the specified 'x' and 'y' value without setting any floating
         // point exceptions.  Return false if either of the arguments is a NaN.
 
@@ -342,29 +349,27 @@ struct DecimalUtil {
         // negative zero, NaN, or infinity then return 'x' itself.
         // Examples: 'round(0.5)' ==> 1.0; 'round(-0.5)' ==> -1.0
 
-    //TODO TBD priority N
-    //static Decimal32 rint(Decimal32 x);
+    // TODO TBD priority N
+    // static Decimal32 rint(Decimal32 x);
         // Return the integal value nearest to the specified 'x'.  Round
         // halfway according to the current decimal floating point rounding
         // mode.  Raise the 'inexact exception' if the return value differs
         // from the argument 'x' in value.  If 'x' is integral, plus zero,
         // minus zero, NaN, or infinity then return 'x' itself.
 
-    //TODO TBD priority 2
-    //static long int       lround(Decimal32 x);
-    //static long long int llround(Decimal32 x);
-        // Return the integal value nearest to the specified 'x', rounding
-        // away from zero regardless of the current decimal floating point
-        // rounding mode.  If the specified 'x' is NaN, infinity, or too large
-        // a value to be stored in the return type raise a 'domain exception',
-        // the return value in such case is unspecified.  Note that these
+    // TODO TBD priority 2
+    // static long int lround(Decimal32 x);
+    // static long long int llround(Decimal32 x);
+        // Return the integal value nearest to the specified 'x', rounding away
+        // from zero regardless of the current decimal floating point rounding
+        // mode.  If the specified 'x' is NaN, infinity, or too large a value
+        // to be stored in the return type raise a 'domain exception', the
+        // return value in such case is unspecified.  Note that these
         // functions, unlike the other rounding functions, return different
         // types than their argument type.
 
                              // Quantum functions
 
-    //TODO TBD priority E
-    //TODO TBD priority E
     static Decimal64  multiplyByPowerOf10(Decimal64  value,
                                           int        exponent);
     static Decimal64  multiplyByPowerOf10(Decimal64  value,
@@ -379,22 +384,24 @@ struct DecimalUtil {
         // unspecified if 'value' is NaN or infinity.  The behavior is
         // undefined unless '-1999999997 <= y <= 99999999'.
 
-    //static Decimal32 quantize(Decimal32 x, Decimal32 y);
     static Decimal64  quantize(Decimal64  x, Decimal64  y);
     static Decimal128 quantize(Decimal128 x, Decimal128 y);
         // Return a number that is equal in value (except for any rounding) and
         // sign to the specified 'x', and which has the exponent of the
         // specified 'y'.  If the exponent needs to be increased, round the
         // value according to the current decimal floating point rounding mode;
-        // and if the result of the rounding is not equal to the value of 'x',
-        // raise the 'inexact floating point exception'.  If the exponent needs
-        // to be decreased and the significant of the result has more digits
-        // than the type would allow, raise the 'invalid' floating-point
-        // exception and return NaN.  If both operands are NaN, return NaN.  If
-        // only one of the operands is infinity, raise the 'invalid'
-        // floating-point exception and return NaN.  If both operands are
-        // inifnity, return infinity with the same sign as 'x'.  This function
-        // does not signal underflow.
+        // and if the result of the rounding is not equal to the value of 'x'.
+        // If the exponent needs to be decreased and the significant of the
+        // result has more digits than the type would allow, return NaN.  The
+        // returned value is unspecified if either operand is NaN or infinity
+        // of either sign.  Note that the 'invalid' and 'inexact'
+        // floating-point exception may be raised.  Also note that the AIX
+        // hardware function of '__d64_quantize' and '__d128_quantize',
+        // produces some results contrary to N1312 on operands of infinity and
+        // Nan.  Note that this function does not guarantee behavior consistent
+        // with Decimal TR N1312 for infinity and NaN because the XLC compiler
+        // intrinsics ('__d6_quantize' and '__d128_quantize') are
+        // non-conformant.
 
     static int quantum(Decimal64  value);
     static int quantum(Decimal128 value);
@@ -407,12 +414,84 @@ struct DecimalUtil {
     static bool sameQuantum(Decimal64  x, Decimal64  y);
     static bool sameQuantum(Decimal128 x, Decimal128 y);
         // Return 'true' if the specified 'x' and 'y' values have the same
-        // quantum exponents, and 'false' otherwise.  If both arguments are
-        // NaN or both arguments are infinity, they have the same quantum
-        // exponents.  Note that if exactly one operand is NaN or exactly
-        // one operand is infinity, they do not have the same quantum
-        // exponents.  Also note that this function will raise no exceptions.
+        // quantum exponents, and 'false' otherwise.  If both arguments are NaN
+        // or both arguments are infinity, they have the same quantum
+        // exponents.  Note that if exactly one operand is NaN or exactly one
+        // operand is infinity, they do not have the same quantum exponents.
+        // Also note that this function will raise no exceptions.
 };
+
+// ============================================================================
+//                      INLINE FUNCTION DEFINITIONS
+// ============================================================================
+
+inline
+Decimal32 DecimalUtil::makeDecimalRaw32(int coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw32(coeff, exponent);
+}
+inline
+Decimal64 DecimalUtil::makeDecimalRaw64(int coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw64(coeff, exponent);
+}
+inline
+Decimal64 DecimalUtil::makeDecimalRaw64(unsigned int coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw64(coeff, exponent);
+}
+inline
+Decimal64 DecimalUtil::makeDecimalRaw64(long long coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw64(coeff, exponent);
+}
+inline
+Decimal64 DecimalUtil::makeDecimalRaw64(unsigned long long coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw64(coeff, exponent);
+}
+inline
+Decimal128 DecimalUtil::makeDecimalRaw128(int coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw128(coeff, exponent);
+}
+inline
+Decimal128 DecimalUtil::makeDecimalRaw128(unsigned int coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw128(coeff, exponent);
+}
+inline
+Decimal128 DecimalUtil::makeDecimalRaw128(long long coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw128(coeff, exponent);
+}
+inline
+Decimal128 DecimalUtil::makeDecimalRaw128(
+                                        unsigned long long coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimalRaw128(coeff, exponent);
+}
+
+inline
+Decimal64 DecimalUtil::makeDecimal64(int coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimal64(coeff, exponent);
+}
+inline
+Decimal64 DecimalUtil::makeDecimal64(unsigned int coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimal64(coeff, exponent);
+}
+inline
+Decimal64 DecimalUtil::makeDecimal64(long long coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimal64(coeff, exponent);
+}
+inline
+Decimal64 DecimalUtil::makeDecimal64(unsigned long long coeff, int exponent)
+{
+    return DecimalImplUtil::makeDecimal64(coeff, exponent);
+}
 
 }  // close package namespace
 }  // close enterprise namespace

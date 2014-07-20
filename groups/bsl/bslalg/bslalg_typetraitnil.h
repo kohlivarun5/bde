@@ -7,12 +7,12 @@
 #endif
 BSLS_IDENT("$Id: $")
 
-//@PURPOSE: Provide a primitive trait for classes that have no other traits.
+//@PURPOSE: Provide a trait to mark classes as having no other traits.
 //
 //@CLASSES:
 //  bslalg::TypeTraitBitwiseCopyable: bit-wise copyable trait
 //
-//@SEE_ALSO: bslmf_typetraits
+//@SEE_ALSO:
 //
 //@DESCRIPTION: This component provides a single traits class,
 // 'bslalg::TypeTraitNil'.  This trait is assigned by default to any class that

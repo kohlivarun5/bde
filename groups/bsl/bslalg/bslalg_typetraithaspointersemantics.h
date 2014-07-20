@@ -7,12 +7,12 @@
 #endif
 BSLS_IDENT("$Id: $")
 
-//@PURPOSE: Provide a primitive type trait for classes with pointer semantics.
+//@PURPOSE: Provide a trait to mark classes as having pointer semantics.
 //
 //@CLASSES:
 //  bslalg::TypeTraitHasPointerSemantics: has pointer semantics
 //
-//@SEE_ALSO: bslmf_typetraits
+//@SEE_ALSO:
 //
 //@DESCRIPTION: This component provides a single traits class,
 // 'bslalg::TypeTraitHasPointerSemantics'.  A type with this trait is said to
