@@ -8,7 +8,9 @@ INCLUDE_PATH	= ../src/
 WARN_ERROR_FLAGS = -warn-error -w -verbose
 OCAMLOPT_CMD = ocamlopt $(WARN_ERROR_FLAGS) -I $(INCLUDE_PATH)
 
-LIBS = ../src/$(LIB_NAME).cma -cclib ../src/lib$(LIB_NAME)_stubs.a
+CPP_LIB_FLAGS= -cclib -L$(PWD)/../src -cclib $(BSL_LIB) -cclib -lstdc++ 
+
+LIBS = ../src/$(LIB_NAME).cma -cclib ../src/lib$(LIB_NAME)_stubs.a $(CPP_LIB_FLAGS)
 
 
 all: libs

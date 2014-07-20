@@ -7,7 +7,7 @@ SOURCES_STUBS_O=$(SOURCES_STUBS:.cpp=.o)
 
 CPP_INC_FLAGS=$(BSL_HEADERS_WITH_I)
 
-CPP_LIB_FLAGS=$(CPP_LIBSTD_FLAGS) -cclib $(BSL_LIB)
+CPP_LIB_FLAGS= -cclib $(BSL_LIB) $(CPP_LIBSTD_FLAGS)
 
 all: stubs libs top docs
 
