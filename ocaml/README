@@ -12,6 +12,6 @@ Steps to build:
   $ make test
   $ make clean
 
-    ** Note: setup.sh assumes you build BDE in $PWD/../build/Debug/
+    ** Note: setup.sh assumes you build BDE in $PWD/../build/
     Update BDE_BUILD_DIR variable in setup.sh 
     if you have a different BDE build location
