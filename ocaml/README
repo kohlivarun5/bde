@@ -1,0 +1,17 @@
+=====================================================
+==
+== This library provides Ocaml bindings to the 
+== Bloomberg BSL/BDE libraries
+==
+=====================================================
+
+** Build:
+Steps to build:
+  $ . ./setup.sh 
+  $ make all
+  $ make test
+  $ make clean
+
+    ** Note: setup.sh assumes you build BDE in $PWD/../build/
+    Update BDE_BUILD_DIR variable in setup.sh 
+    if you have a different BDE build location
